@@ -1,10 +1,32 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Умный генератор Рапидо 2</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA мета-теги -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Рапидо Драйв">
+    <meta name="theme-color" content="#000000">
+    
+    <title>Рапидо Драйв PRO</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Иконки для PWA (относительные пути) -->
+    <link rel="apple-touch-icon" href="icons/icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="96x96" href="icons/icon-96x96.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="384x384" href="icons/icon-384x384.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+    
     <style>
+        /* Обновлённые стили */
         :root {
             --bg-color: #f5f5f7;
             --text-color: #1c1c1e;
@@ -15,6 +37,8 @@
             --keyboard-bg: #e5e5ea;
             --button-active: #004499;
             --history-border: #eee;
+            --selected-color: #34c759;
+            --special-color: #af52de;
         }
 
         .dark-mode {
@@ -27,6 +51,8 @@
             --keyboard-bg: #3a3a3c;
             --button-active: #0061c8;
             --history-border: #444;
+            --selected-color: #30d158;
+            --special-color: #bf5af2;
         }
 
         * {
@@ -50,7 +76,7 @@
             max-width: 100%;
             width: 100%;
             margin: 0 auto;
-            padding-bottom: 220px;
+            padding-bottom: 280px;
         }
         h1 {
             font-size: 1.5rem;
@@ -99,10 +125,18 @@
             justify-content: center;
             font-weight: bold;
             font-size: 15px;
+            transition: transform 0.2s;
+        }
+        .number.selected {
+            background: var(--selected-color);
+            transform: scale(1.1);
         }
         .number.small {
             background: var(--secondary-color);
             width: 36px;
+        }
+        .number.special {
+            background: var(--special-color);
         }
         button {
             width: 100%;
@@ -142,6 +176,10 @@
             word-wrap: break-word;
             color: var(--text-color);
         }
+        .input-active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+        }
         .stats-table {
             width: 100%;
             border-collapse: collapse;
@@ -175,6 +213,9 @@
             margin: 0;
             background: var(--secondary-color);
             color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
         .custom-keyboard {
             position: fixed;
@@ -240,6 +281,43 @@
             border: none;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        .validation-error {
+            color: var(--secondary-color);
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        .method-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .method-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background: var(--keyboard-bg);
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .method-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .info-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+            line-height: 16px;
+            font-size: 12px;
+            margin-left: 5px;
+            cursor: help;
+        }
     </style>
 </head>
 <body>
@@ -247,59 +325,41 @@
     
     <div class="container">
         <div class="card">
-            <h1>Умный генератор Рапидо 2</h1>
-            <p class="subtitle">Анализирует историю и предлагает числа</p>
+            <h1>Рапидо Драйв PRO</h1>
+            <p class="subtitle">Анализ с методами Огнева и Карнауха</p>
         </div>
         
         <div class="card">
             <h2>Сгенерировать числа</h2>
+            <div class="method-selector">
+                <div class="method-btn active" data-method="cold">Холодные</div>
+                <div class="method-btn" data-method="ogneva">Огнева<span class="info-icon" title="Характеристическое число">?</span></div>
+                <div class="method-btn" data-method="karnaugh">Карнауха<span class="info-icon" title="Метод математика П.В. Карнауха">?</span></div>
+                <div class="method-btn" data-method="random">Случайные</div>
+            </div>
             <p>Поле 1 (8 из 20):</p>
             <div class="numbers" id="field1"></div>
             <p>Поле 2 (1 из 4):</p>
             <div class="numbers" id="field2"></div>
-            <button id="smartGenBtn">Умная генерация</button>
-            <button id="randomGenBtn" class="secondary">Случайные числа</button>
-            <button id="refreshStatsBtn" class="secondary">Обновить анализ</button>
+            <button id="genBtn">Сгенерировать</button>
         </div>
         
         <div class="card">
             <h2>Добавить историю</h2>
             <div id="inputContainer" style="position:relative;">
-                <input type="text" id="fakeInput" readonly>
+                <input type="text" id="fakeInput" readonly />
                 <div id="inputDisplay" onclick="showKeyboard()">Коснитесь для ввода (формат: 1,2,3,4,5,6,7,8 | 1)</div>
+                <div id="validationError" class="validation-error"></div>
             </div>
             <button id="addHistoryBtn">Добавить</button>
         </div>
         
         <div class="card">
             <h2>Статистика чисел</h2>
-            
-            <h3>Поле 1 (8 из 20)</h3>
-            <table class="stats-table">
-                <thead>
-                    <tr>
-                        <th>Число</th>
-                        <th>Выпало раз</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody id="statsTable1"></tbody>
-            </table>
-            
-            <h3 style="margin-top:15px;">Поле 2 (1 из 4)</h3>
-            <table class="stats-table">
-                <thead>
-                    <tr>
-                        <th>Число</th>
-                        <th>Выпало раз</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody id="statsTable2"></tbody>
-            </table>
+            <table class="stats-table" id="statsTable"></table>
         </div>
         
-        <div class="card">
+        <div class="card" style="max-height: 300px; overflow-y: auto;">
             <h2>История розыгрышей</h2>
             <div id="historyList"></div>
             <button id="clearHistoryBtn" class="secondary">Очистить историю</button>
@@ -308,329 +368,457 @@
 
     <div class="custom-keyboard" id="customKeyboard">
         <div class="keyboard-row">
-            <div class="keyboard-key" data-key="1">1</div>
-            <div class="keyboard-key" data-key="2">2</div>
-            <div class="keyboard-key" data-key="3">3</div>
-            <div class="keyboard-key red" data-key="Backspace">←</div>
+            <div class="keyboard-key">1</div>
+            <div class="keyboard-key">2</div>
+            <div class="keyboard-key">3</div>
+            <div class="keyboard-key">4</div>
+            <div class="keyboard-key">5</div>
+            <div class="keyboard-key">6</div>
+            <div class="keyboard-key">7</div>
+            <div class="keyboard-key">8</div>
+            <div class="keyboard-key">9</div>
+            <div class="keyboard-key wide red" id="keyDelete">⌫</div>
         </div>
         <div class="keyboard-row">
-            <div class="keyboard-key" data-key="4">4</div>
-            <div class="keyboard-key" data-key="5">5</div>
-            <div class="keyboard-key" data-key="6">6</div>
-            <div class="keyboard-key" data-key=",">,</div>
-        </div>
-        <div class="keyboard-row">
-            <div class="keyboard-key" data-key="7">7</div>
-            <div class="keyboard-key" data-key="8">8</div>
-            <div class="keyboard-key" data-key="9">9</div>
-            <div class="keyboard-key" data-key="|">|</div>
-        </div>
-        <div class="keyboard-row">
-            <div class="keyboard-key wide" data-key="0">0</div>
-            <div class="keyboard-key wide blue" data-key="Enter">✔ Готово</div>
+            <div class="keyboard-key">0</div>
+            <div class="keyboard-key">,</div>
+            <div class="keyboard-key">|</div>
+            <div class="keyboard-key wide blue" id="keyDone">Готово</div>
         </div>
     </div>
 
-    <script>
-        // Данные
-        let history = JSON.parse(localStorage.getItem('rapido2_history')) || [];
-        let stats = { field1: {}, field2: {} };
-        let inputText = '';
-        let darkMode = localStorage.getItem('darkMode') === 'true';
-        
-        // Элементы интерфейса
-        const inputDisplay = document.getElementById('inputDisplay');
-        const fakeInput = document.getElementById('fakeInput');
-        const customKeyboard = document.getElementById('customKeyboard');
-        const themeToggle = document.getElementById('themeToggle');
-
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', () => {
-            // Применяем тему
-            if (darkMode) {
-                document.body.classList.add('dark-mode');
-            }
-            
-            updateStats();
-            updateHistoryList();
-            generateRandomNumbers();
-            
-            // Обработчики событий
-            document.getElementById('smartGenBtn').addEventListener('click', generateSmartNumbers);
-            document.getElementById('randomGenBtn').addEventListener('click', generateRandomNumbers);
-            document.getElementById('refreshStatsBtn').addEventListener('click', refreshStats);
-            document.getElementById('addHistoryBtn').addEventListener('click', addHistory);
-            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
-            themeToggle.addEventListener('click', toggleTheme);
-            
-            // Обработчики для клавиатуры
-            document.querySelectorAll('.keyboard-key').forEach(key => {
-                key.addEventListener('click', (e) => {
-                    const keyValue = e.currentTarget.getAttribute('data-key');
-                    handleKeyPress(keyValue);
+<script>
+    // --- Регистрация Service Worker ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker зарегистрирован: ', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Ошибка регистрации ServiceWorker: ', error);
                 });
+        });
+    }
+
+    // --- Тема ---
+    const themeToggle = document.getElementById('themeToggle');
+    function applyTheme(dark) {
+        if(dark) {
+            document.documentElement.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            document.documentElement.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        }
+    }
+    themeToggle.onclick = () => {
+        const dark = document.documentElement.classList.contains('dark-mode');
+        applyTheme(!dark);
+    };
+    // Инициализация темы по сохранённому значению
+    applyTheme(localStorage.getItem('darkMode') === 'true');
+
+    // --- История ---
+    let history = JSON.parse(localStorage.getItem('rapido2History') || '[]');
+    
+    // --- Отображение истории ---
+    const historyList = document.getElementById('historyList');
+    function renderHistory() {
+        historyList.innerHTML = '';
+        history.forEach((entry, idx) => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <span>${entry}</span>
+                <button data-idx="${idx}">X</button>
+            `;
+            historyList.appendChild(div);
+        });
+    }
+    renderHistory();
+    
+    // Удаление записи
+    historyList.addEventListener('click', e => {
+        if(e.target.tagName === 'BUTTON') {
+            const idx = +e.target.dataset.idx;
+            history.splice(idx, 1);
+            saveHistory();
+            renderHistory();
+            updateStats();
+        }
+    });
+    
+    // Очистка истории
+    document.getElementById('clearHistoryBtn').onclick = () => {
+        if(confirm('Очистить всю историю?')) {
+            history = [];
+            saveHistory();
+            renderHistory();
+            updateStats();
+            generateNumbers();
+        }
+    };
+
+    function saveHistory() {
+        localStorage.setItem('rapido2History', JSON.stringify(history));
+    }
+
+    // --- Ввод ---
+    const inputDisplay = document.getElementById('inputDisplay');
+    const fakeInput = document.getElementById('fakeInput');
+    const customKeyboard = document.getElementById('customKeyboard');
+    const validationError = document.getElementById('validationError');
+
+    function showKeyboard() {
+        customKeyboard.style.display = 'flex';
+        inputDisplay.classList.add('input-active');
+        validationError.style.display = 'none';
+    }
+    function hideKeyboard() {
+        customKeyboard.style.display = 'none';
+        inputDisplay.classList.remove('input-active');
+    }
+
+    // Отобразить введённый текст
+    function updateInputDisplay() {
+        inputDisplay.textContent = fakeInput.value || 'Коснитесь для ввода (формат: 1,2,3,4,5,6,7,8 | 1)';
+    }
+
+    // Клавиши виртуальной клавиатуры
+    customKeyboard.addEventListener('click', e => {
+        if(!e.target.classList.contains('keyboard-key')) return;
+        const key = e.target.textContent;
+        if(key === 'Готово') {
+            hideKeyboard();
+            return;
+        }
+        if(key === '⌫') {
+            fakeInput.value = fakeInput.value.slice(0, -1);
+            updateInputDisplay();
+            return;
+        }
+        // Разрешаем цифры, запятую и вертикальную черту
+        if(/[0-9,|]/.test(key)) {
+            fakeInput.value += key;
+            updateInputDisplay();
+        }
+    });
+
+    inputDisplay.onclick = showKeyboard;
+
+    // --- Валидация ввода ---
+    function validateInput(val) {
+        validationError.style.display = 'none';
+        
+        // Проверка формата
+        if(!/^(\d{1,2},){7}\d{1,2}\s*\|\s*\d{1,2}$/.test(val)) {
+            validationError.textContent = 'Неверный формат. Пример: 1,2,3,4,5,6,7,8 | 1';
+            validationError.style.display = 'block';
+            return false;
+        }
+        
+        const [field1, field2] = val.split(/\s*\|\s*/);
+        const nums1 = field1.split(',').map(n => parseInt(n));
+        const num2 = parseInt(field2);
+        
+        // Проверка диапазонов
+        const invalid1 = nums1.filter(n => n < 1 || n > 20);
+        if(invalid1.length > 0) {
+            validationError.textContent = `Числа в поле 1 должны быть от 1 до 20. Ошибка: ${invalid1.join(', ')}`;
+            validationError.style.display = 'block';
+            return false;
+        }
+        
+        if(num2 < 1 || num2 > 4) {
+            validationError.textContent = 'Число в поле 2 должно быть от 1 до 4';
+            validationError.style.display = 'block';
+            return false;
+        }
+        
+        // Проверка дубликатов в поле 1
+        const unique = new Set(nums1);
+        if(unique.size !== 8) {
+            validationError.textContent = 'В поле 1 не должно быть повторяющихся чисел';
+            validationError.style.display = 'block';
+            return false;
+        }
+        
+        return true;
+    }
+
+    // --- Добавление в историю ---
+    document.getElementById('addHistoryBtn').onclick = () => {
+        const val = fakeInput.value.trim();
+        if(!val) {
+            validationError.textContent = 'Введите числа в формате: 1,2,3,4,5,6,7,8 | 1';
+            validationError.style.display = 'block';
+            return;
+        }
+        
+        if(!validateInput(val)) return;
+        
+        // Проверка дубликатов в истории
+        if(history.includes(val)) {
+            validationError.textContent = 'Эта комбинация уже есть в истории';
+            validationError.style.display = 'block';
+            return;
+        }
+        
+        history.push(val);
+        saveHistory();
+        renderHistory();
+        updateStats();
+        fakeInput.value = '';
+        updateInputDisplay();
+        hideKeyboard();
+        
+        // Обновляем генерацию после добавления
+        generateNumbers();
+    };
+
+    // --- Статистика ---
+    const statsTable = document.getElementById('statsTable');
+
+    function updateStats() {
+        // Считаем частоты для обоих полей
+        const countField1 = Array(20).fill(0);
+        const countField2 = Array(4).fill(0);
+
+        history.forEach(entry => {
+            const parts = entry.split(/\s*\|\s*/);
+            if(parts.length !== 2) return;
+            const nums1 = parts[0].split(',').map(n => parseInt(n));
+            const nums2 = parseInt(parts[1]);
+
+            nums1.forEach(n => {
+                if(n >= 1 && n <= 20) countField1[n - 1]++;
             });
-            
-            // Скрытие клавиатуры при клике вне поля ввода
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#inputContainer') && !e.target.closest('.custom-keyboard')) {
-                    hideKeyboard();
-                }
-            });
+            if(nums2 >= 1 && nums2 <= 4) countField2[nums2 - 1]++;
         });
 
-        // Переключение темы
-        function toggleTheme() {
-            darkMode = !darkMode;
-            localStorage.setItem('darkMode', darkMode);
-            document.body.classList.toggle('dark-mode');
+        let html = '<tr><th>Число (8 из 20)</th><th>Частота</th><th>Число (1 из 4)</th><th>Частота</th></tr>';
+
+        for(let i = 0; i < 20; i++) {
+            const hotColdClass1 = countField1[i] > 0 ? 'hot' : 'cold';
+            const hotColdClass2 = (i < 4 && countField2[i] > 0) ? 'hot' : 'cold';
+            html += `<tr>
+                <td>${i + 1}</td>
+                <td class="${hotColdClass1}">${countField1[i]}</td>
+                <td>${i < 4 ? i + 1 : ''}</td>
+                <td>${i < 4 ? countField2[i] : ''}</td>
+            </tr>`;
         }
-
-        // Функции клавиатуры
-        function showKeyboard() {
-            customKeyboard.style.display = 'flex';
-            fakeInput.focus();
-            inputDisplay.textContent = inputText || '';
-            inputDisplay.style.color = 'var(--text-color)';
-            
-            // Прокрутка к полю ввода
-            setTimeout(() => {
-                inputDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
+        statsTable.innerHTML = html;
+    }
+    
+    // --- Методы генерации ---
+    let currentMethod = 'cold';
+    
+    // Переключение методов
+    document.querySelectorAll('.method-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMethod = btn.dataset.method;
+            generateNumbers();
+        });
+    });
+    
+    // Основная функция генерации
+    function generateNumbers() {
+        switch(currentMethod) {
+            case 'cold':
+                generateColdNumbers();
+                break;
+            case 'ogneva':
+                generateOgnevaNumbers();
+                break;
+            case 'karnaugh':
+                generateKarnaughNumbers();
+                break;
+            case 'random':
+                generateRandomNumbers();
+                break;
+            default:
+                generateColdNumbers();
         }
+    }
+    
+    // Метод холодных чисел
+    function generateColdNumbers() {
+        const countField1 = Array(20).fill(0);
+        const countField2 = Array(4).fill(0);
 
-        function hideKeyboard() {
-            customKeyboard.style.display = 'none';
-            fakeInput.blur();
-        }
+        history.forEach(entry => {
+            const parts = entry.split(/\s*\|\s*/);
+            if(parts.length !== 2) return;
+            const nums1 = parts[0].split(',').map(n => parseInt(n));
+            const nums2 = parseInt(parts[1]);
 
-        function handleKeyPress(key) {
-            switch(key) {
-                case 'Backspace':
-                    inputText = inputText.slice(0, -1);
-                    break;
-                case 'Enter':
-                    hideKeyboard();
-                    return;
-                default:
-                    inputText += key;
-            }
-            
-            inputDisplay.textContent = inputText || 'Коснитесь для ввода (формат: 1,2,3,4,5,6,7,8 | 1)';
-            inputDisplay.style.color = inputText ? 'var(--text-color)' : 'var(--text-color)';
-            inputDisplay.style.opacity = inputText ? '1' : '0.7';
-        }
-
-        // Основные функции генератора
-        function updateStats() {
-            stats = { field1: {}, field2: {} };
-
-            history.forEach(entry => {
-                try {
-                    const [field1Str, field2Str] = entry.split('|').map(s => s.trim());
-                    const field1Numbers = field1Str.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 20);
-                    const field2Number = parseInt(field2Str);
-
-                    if (field1Numbers.length === 8 && !isNaN(field2Number) && field2Number >= 1 && field2Number <= 4) {
-                        field1Numbers.forEach(num => {
-                            stats.field1[num] = (stats.field1[num] || 0) + 1;
-                        });
-                        stats.field2[field2Number] = (stats.field2[field2Number] || 0) + 1;
-                    }
-                } catch (e) {
-                    console.error("Ошибка обработки записи:", entry, e);
-                }
+            nums1.forEach(n => {
+                if(n >= 1 && n <= 20) countField1[n - 1]++;
             });
+            if(nums2 >= 1 && nums2 <= 4) countField2[nums2 - 1]++;
+        });
 
-            renderStatsTable('statsTable1', stats.field1, 20);
-            renderStatsTable('statsTable2', stats.field2, 4);
+        if(history.length === 0) {
+            generateRandomNumbers();
+            return;
         }
 
-        function renderStatsTable(tableId, numberStats, maxNum) {
-            const table = document.getElementById(tableId);
-            table.innerHTML = '';
+        // Выбираем 8 самых редких чисел для первого поля
+        let numbers1 = Array.from({ length: 20 }, (_, i) => i + 1);
+        numbers1.sort((a, b) => countField1[a - 1] - countField1[b - 1]);
+        const selected1 = numbers1.slice(0, 8).sort((a, b) => a - b);
 
-            // Создаем все возможные числа для этого поля
-            const allNumbers = Array.from({length: maxNum}, (_, i) => i + 1);
+        // Для второго поля выбираем самое редкое число
+        let numbers2 = Array.from({ length: 4 }, (_, i) => i + 1);
+        numbers2.sort((a, b) => countField2[a - 1] - countField2[b - 1]);
+        const selected2 = numbers2[0];
+
+        displayNumbers(selected1, selected2, 'cold');
+    }
+    
+    // Метод Огнева (характеристическое число)
+    function generateOgnevaNumbers() {
+        if(history.length < 5) {
+            generateColdNumbers();
+            return;
+        }
+        
+        // Рассчитываем среднее характеристическое число
+        let totalOgneva = 0;
+        history.forEach(entry => {
+            const parts = entry.split(/\s*\|\s*/);
+            if(parts.length !== 2) return;
+            const nums1 = parts[0].split(',').map(Number);
+            const num2 = parseInt(parts[1]);
+            const sum1 = nums1.reduce((a, b) => a + b, 0);
+            totalOgneva += sum1 * num2;
+        });
+        const avgOgneva = totalOgneva / history.length;
+        
+        // Генерируем комбинации и выбираем лучшую
+        let bestCombination = null;
+        let bestDiff = Infinity;
+        
+        for(let i = 0; i < 50; i++) {
+            const nums1 = [];
+            while(nums1.length < 8) {
+                const n = Math.floor(Math.random() * 20) + 1;
+                if(!nums1.includes(n)) nums1.push(n);
+            }
+            nums1.sort((a, b) => a - b);
+            const num2 = Math.floor(Math.random() * 4) + 1;
             
-            // Собираем статистику
-            const numbersData = allNumbers.map(num => ({
-                number: num,
-                count: numberStats[num] || 0
-            }));
-
-            // Сортируем по частоте выпадения
-            numbersData.sort((a, b) => b.count - a.count);
-
-            // Определяем горячие и холодные числа (первые и последние 20%)
-            const hotThreshold = Math.ceil(maxNum * 0.2);
-            const coldThreshold = Math.max(1, Math.floor(maxNum * 0.2));
+            const sum1 = nums1.reduce((a, b) => a + b, 0);
+            const ogneva = sum1 * num2;
+            const diff = Math.abs(ogneva - avgOgneva);
             
-            const hotNumbers = numbersData.slice(0, hotThreshold).map(item => item.number);
-            const coldNumbers = numbersData.slice(-coldThreshold).map(item => item.number);
+            if(diff < bestDiff) {
+                bestDiff = diff;
+                bestCombination = { nums1, num2 };
+            }
+        }
+        
+        if(bestCombination) {
+            displayNumbers(bestCombination.nums1, bestCombination.num2, 'ogneva');
+        } else {
+            generateRandomNumbers();
+        }
+    }
+    
+    // Метод Карнауха (комбинация холодных и горячих чисел)
+    function generateKarnaughNumbers() {
+        const countField1 = Array(20).fill(0);
+        const countField2 = Array(4).fill(0);
 
-            // Заполняем таблицу
-            numbersData.forEach(item => {
-                const row = document.createElement('tr');
-                const numCell = document.createElement('td');
-                const countCell = document.createElement('td');
-                const statusCell = document.createElement('td');
+        history.forEach(entry => {
+            const parts = entry.split(/\s*\|\s*/);
+            if(parts.length !== 2) return;
+            const nums1 = parts[0].split(',').map(n => parseInt(n));
+            const nums2 = parseInt(parts[1]);
 
-                numCell.textContent = item.number;
-                countCell.textContent = item.count;
-
-                if (hotNumbers.includes(item.number)) {
-                    statusCell.textContent = 'Горячее';
-                    statusCell.className = 'hot';
-                } else if (coldNumbers.includes(item.number)) {
-                    statusCell.textContent = 'Холодное';
-                    statusCell.className = 'cold';
-                }
-
-                row.appendChild(numCell);
-                row.appendChild(countCell);
-                row.appendChild(statusCell);
-                table.appendChild(row);
+            nums1.forEach(n => {
+                if(n >= 1 && n <= 20) countField1[n - 1]++;
             });
-        }
+            if(nums2 >= 1 && nums2 <= 4) countField2[nums2 - 1]++;
+        });
 
-        function generateSmartNumbers() {
-            const field1Candidates = getWeightedNumbers(stats.field1, 8, 20);
-            const field2Candidates = getWeightedNumbers(stats.field2, 1, 4);
-            displayNumbers(field1Candidates, field2Candidates);
+        if(history.length < 10) {
+            generateColdNumbers();
+            return;
         }
+        
+        // Сортируем числа по частоте выпадения
+        let numbers1 = Array.from({ length: 20 }, (_, i) => i + 1);
+        numbers1.sort((a, b) => countField1[a - 1] - countField1[b - 1]);
+        
+        // Выбираем 5 холодных и 3 горячих числа
+        const coldNumbers = numbers1.slice(0, 5);
+        const hotNumbers = numbers1.slice(-3).reverse();
+        const selected1 = [...coldNumbers, ...hotNumbers].sort((a, b) => a - b);
+        
+        // Для второго поля выбираем среднее по частоте
+        let numbers2 = Array.from({ length: 4 }, (_, i) => i + 1);
+        numbers2.sort((a, b) => countField2[a - 1] - countField2[b - 1]);
+        const selected2 = numbers2[1] || numbers2[0]; // берем второе по холодности
+        
+        displayNumbers(selected1, selected2, 'karnaugh');
+    }
+    
+    // Случайная генерация
+    function generateRandomNumbers() {
+        const nums1 = [];
+        while(nums1.length < 8) {
+            const n = Math.floor(Math.random() * 20) + 1;
+            if(!nums1.includes(n)) nums1.push(n);
+        }
+        nums1.sort((a, b) => a - b);
+        const n2 = Math.floor(Math.random() * 4) + 1;
+        
+        displayNumbers(nums1, n2, 'random');
+    }
+    
+    // Отображение сгенерированных чисел
+    function displayNumbers(nums1, num2, method = 'cold') {
+        const field1 = document.getElementById('field1');
+        const field2 = document.getElementById('field2');
+        field1.innerHTML = '';
+        field2.innerHTML = '';
 
-        function generateRandomNumbers() {
-            const field1 = [];
-            while (field1.length < 8) {
-                const num = Math.floor(Math.random() * 20) + 1;
-                if (!field1.includes(num)) field1.push(num);
+        nums1.forEach(n => {
+            const div = document.createElement('div');
+            div.className = 'number';
+            if(method === 'karnaugh' && nums1.indexOf(n) < 5) {
+                div.classList.add('special');
             }
-            field1.sort((a, b) => a - b);
-
-            const field2 = Math.floor(Math.random() * 4) + 1;
-            displayNumbers(field1, field2);
+            div.textContent = n;
+            field1.appendChild(div);
+        });
+        
+        const div2 = document.createElement('div');
+        div2.className = 'number small';
+        if(method === 'ogneva') {
+            div2.classList.add('special');
         }
+        div2.textContent = num2;
+        field2.appendChild(div2);
+        
+        // Анимация выбора
+        setTimeout(() => {
+            field1.querySelectorAll('.number').forEach(el => {
+                el.classList.add('selected');
+            });
+            div2.classList.add('selected');
+        }, 100);
+    }
 
-        function refreshStats() {
-            updateStats();
-            generateSmartNumbers();
-        }
-
-        function getWeightedNumbers(numberStats, count, maxNum) {
-            // Создаем массив всех возможных чисел
-            const allNumbers = Array.from({length: maxNum}, (_, i) => i + 1);
-            
-            // Если нет статистики - случайные числа
-            if (Object.keys(numberStats).length === 0) {
-                if (count === 1) return Math.floor(Math.random() * maxNum) + 1;
-                
-                const result = [];
-                while (result.length < count) {
-                    const num = Math.floor(Math.random() * maxNum) + 1;
-                    if (!result.includes(num)) result.push(num);
-                }
-                return result.sort((a, b) => a - b);
-            }
-
-            // Создаем взвешенный массив
-            const numbers = allNumbers.filter(num => numberStats[num] !== undefined);
-            const weights = numbers.map(num => numberStats[num] || 1);
-            const minWeight = Math.min(...weights);
-            const adjustedWeights = weights.map(w => w + minWeight);
-
-            const result = [];
-            while (result.length < count) {
-                const totalWeight = adjustedWeights.reduce((a, b) => a + b, 0);
-                let random = Math.random() * totalWeight;
-                let selectedIndex = 0;
-
-                for (let i = 0; i < adjustedWeights.length; i++) {
-                    random -= adjustedWeights[i];
-                    if (random <= 0) {
-                        selectedIndex = i;
-                        break;
-                    }
-                }
-
-                const selectedNum = numbers[selectedIndex];
-                if (!result.includes(selectedNum)) {
-                    result.push(selectedNum);
-                }
-            }
-
-            return count === 1 ? result[0] : result.sort((a, b) => a - b);
-        }
-
-        function displayNumbers(field1, field2) {
-            const field1El = document.getElementById('field1');
-            const field2El = document.getElementById('field2');
-
-            // Проверка на NaN и корректные значения
-            const displayField1 = Array.isArray(field1) 
-                ? field1.filter(n => !isNaN(n) && n >= 1 && n <= 20)
-                : [];
-            const displayField2 = (!isNaN(field2) && field2 >= 1 && field2 <= 4) ? field2 : 1;
-
-            // Если что-то пошло не так - генерируем случайные числа
-            if (displayField1.length !== 8) {
-                return generateRandomNumbers();
-            }
-
-            field1El.innerHTML = displayField1
-                .sort((a, b) => a - b)
-                .map(num => `<div class="number">${num}</div>`)
-                .join('');
-
-            field2El.innerHTML = `<div class="number small">${displayField2}</div>`;
-        }
-
-        function addHistory() {
-            if (!inputText) return alert("Введите данные!");
-
-            if (!inputText.includes('|')) {
-                return alert("Используйте формат: 1,2,3,4,5,6,7,8 | 1");
-            }
-
-            // Добавляем новую запись в начало массива
-            history.unshift(inputText);
-            localStorage.setItem('rapido2_history', JSON.stringify(history));
-            
-            inputText = '';
-            inputDisplay.textContent = 'Коснитесь для ввода (формат: 1,2,3,4,5,6,7,8 | 1)';
-            inputDisplay.style.opacity = '0.7';
-            updateStats();
-            updateHistoryList();
-            hideKeyboard();
-        }
-
-        function updateHistoryList() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = history.map((item, index) => 
-                `<div class="history-item">
-                    <span><strong>${index + 1}.</strong> ${item}</span>
-                    <button onclick="deleteHistoryItem(${index})">×</button>
-                </div>`
-            ).join('');
-        }
-
-        function deleteHistoryItem(index) {
-            if (confirm("Удалить эту запись из истории?")) {
-                history.splice(index, 1);
-                localStorage.setItem('rapido2_history', JSON.stringify(history));
-                updateStats();
-                updateHistoryList();
-            }
-        }
-
-        function clearHistory() {
-            if (confirm("Удалить всю историю розыгрышей?")) {
-                history = [];
-                localStorage.removeItem('rapido2_history');
-                updateStats();
-                updateHistoryList();
-            }
-        }
-    </script>
+    // --- Инициализация при загрузке ---
+    document.getElementById('genBtn').onclick = generateNumbers;
+    updateStats();
+    generateNumbers();
+</script>
 </body>
 </html>
